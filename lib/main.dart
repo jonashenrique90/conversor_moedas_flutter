@@ -13,7 +13,10 @@ void main() async{
     home: Home(),
     theme: ThemeData(
       hintColor: Colors.amberAccent,
-      primaryColor: Colors.amberAccent
+      primaryColor: Colors.amberAccent,
+      inputDecorationTheme: InputDecorationTheme(
+      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.amberAccent))
+      )
     ),
   ));
 }
@@ -25,9 +28,54 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
 
+  final realController = TextEditingController();
+  final dollarController = TextEditingController();
+  final euroController = TextEditingController();
+
   double dollar;
   double euro;
   
+  void _clearAll(){
+    realController.text = "";
+    dollarController.text = "";
+    euroController.text = "";
+  }
+  void _refresh(){
+    setState(() {
+      realController.text = "";
+      dollarController.text = "";
+      euroController.text = "";
+    });
+  }
+
+  void _realChanged(String text){
+    if (text.isEmpty) {
+      _clearAll();
+      return;
+    }
+    double real = double.parse(text);
+    dollarController.text = (real/dollar).toStringAsFixed(3);
+    euroController.text = (real/euro).toStringAsFixed(3);
+  }
+    void _dollarChanged(String text){
+      if (text.isEmpty) {
+      _clearAll();
+      return;
+      }
+      double dollar = double.parse(text);
+      realController.text = (dollar * this.dollar).toStringAsFixed(3);
+      euroController.text = (dollar * this.dollar/euro).toStringAsFixed(3);
+  }
+    void _euroChanged(String text){
+      if (text.isEmpty) {
+      _clearAll();
+      return;
+      }
+      double euro = double.parse(text);
+      realController.text = (euro * this.euro).toStringAsFixed(3);
+      dollarController.text = (euro *this.euro/dollar).toStringAsFixed(3);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,6 +83,12 @@ class _HomeState extends State<Home> {
         title: Text("Conversor de moedas"),
         centerTitle: true,
         backgroundColor: Colors.greenAccent,
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _refresh,
+          ),
+        ],
       ),
       body: FutureBuilder<Map>(
         future: getData(),
@@ -68,35 +122,13 @@ class _HomeState extends State<Home> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       Icon(Icons.monetization_on, size: 130.0, color: Colors.amberAccent,),
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: "Reais",
-                          labelStyle: TextStyle(color: Colors.amberAccent),
-                          border: OutlineInputBorder(),
-                          prefixText: "R\$"
-                        ),
-                        style: TextStyle(color: Colors.amberAccent, fontSize: 24.0),
-                      ),
+                      buildTextField("Reais", "R\$", realController, _realChanged),
                       Divider(),
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: "Dollar",
-                          labelStyle: TextStyle(color: Colors.amberAccent),
-                          border: OutlineInputBorder(),
-                          prefixText: "\$"
-                        ),
-                        style: TextStyle(color: Colors.amberAccent, fontSize: 24.0),
-                      ),
+                      buildTextField("Dollar", "\$", dollarController, _dollarChanged),
                       Divider(),
-                      TextField(
-                        decoration: InputDecoration(
-                          labelText: "Euros",
-                          labelStyle: TextStyle(color: Colors.amberAccent),
-                          border: OutlineInputBorder(),
-                          prefixText: "€"
-                        ),
-                        style: TextStyle(color: Colors.amberAccent, fontSize: 24.0),
-                      ),
+                      buildTextField("Euros", "€", euroController, _euroChanged),
+                      Divider(),
+                      
                     ],
                   ),
                 );
@@ -113,4 +145,20 @@ Future<Map> getData() async {
 
   http.Response response = await http.get(request);
   return json.decode(response.body);
+}
+
+Widget buildTextField(String label, String prefix, TextEditingController coin, Function change) {
+
+  return TextField(
+    controller: coin,
+    decoration: InputDecoration(
+    labelText: label,
+    labelStyle: TextStyle(color: Colors.amberAccent),
+    border: OutlineInputBorder(),
+    prefixText: prefix
+    ),
+  style: TextStyle(color: Colors.grey, fontSize: 24.0),
+  onChanged: change,
+  keyboardType: TextInputType.number,
+  );
 }
